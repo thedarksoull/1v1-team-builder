@@ -5,7 +5,7 @@ function parseSets(text) {
     .filter(s => s.length > 0)
     .map(s => {
       const firstLine = s.split('\n')[0];
-      const name = firstLine.split('@')[0].trim();
+      const name = firstLine.split('@')[0].replace(/\(.*?\)/g, '').trim();
       return { label: name, set: s };
     });
 }
@@ -17,6 +17,25 @@ function groupThreats(sets) {
     map[entry.label].sets.push(entry.set);
   }
   return Object.values(map);
+}
+
+function updateProgress(current, total) {
+  document.getElementById('progressText').textContent = `Analyzing set ${current} of ${total}...`;
+}
+
+async function analyzeOne(entry, threats, apiKey) {
+  const res = await fetch('/api/analyze', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ pool: [entry], threats, apiKey })
+  });
+  const text = await res.text();
+  try {
+    const data = JSON.parse(text);
+    return data.results?.[0] || null;
+  } catch(e) {
+    return { name: entry.label, results: [], score: 0, summary: 'Server error.' };
+  }
 }
 
 async function analyze() {
@@ -41,36 +60,24 @@ async function analyze() {
   document.getElementById('analyzeBtn').disabled = true;
   document.getElementById('loading').classList.remove('hidden');
   document.getElementById('results').classList.add('hidden');
+  document.getElementById('progressText').textContent = `Analyzing set 1 of ${pool.length}...`;
 
-  try {
-    const res = await fetch('/api/analyze', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ pool, threats, apiKey })
-    });
+  const allResults = [];
 
-    const text = await res.text();
-    let data;
-    try {
-      data = JSON.parse(text);
-    } catch(e) {
-      alert('Server error: ' + text.slice(0, 200));
-      return;
-    }
-
-    if (data.error) {
-      alert('Error: ' + data.error);
-      return;
-    }
-
-    renderResults(data.results, threats.length);
-  } catch (err) {
-    alert('Error: ' + err.message);
-    console.error(err);
-  } finally {
-    document.getElementById('analyzeBtn').disabled = false;
-    document.getElementById('loading').classList.add('hidden');
+  for (let i = 0; i < pool.length; i++) {
+    updateProgress(i + 1, pool.length);
+    const result = await analyzeOne(pool[i], threats, apiKey);
+    if (result) allResults.push(result);
+    await new Promise(r => setTimeout(r, 500));
   }
+
+  allResults.sort((a, b) => b.score - a.score);
+  const top5 = allResults.slice(0, 5);
+
+  renderResults(top5, threats.length);
+
+  document.getElementById('analyzeBtn').disabled = false;
+  document.getElementById('loading').classList.add('hidden');
 }
 
 function renderResults(results, totalThreats) {
