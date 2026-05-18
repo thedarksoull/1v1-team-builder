@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>1v1 Team Builder</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>⚔️ 1v1 Set Optimizer</h1>
+    <p class="subtitle">Find which sets best cover your threatlist</p>
+
+    <div class="card">
+      <h2>🔑 Gemini API Key</h2>
+      <input type="password" id="apiKey" placeholder="Paste your Gemini API key here" />
+    </div>
+
+    <div class="card">
+      <h2>📦 Your Set Pool</h2>
+      <p class="hint">Paste sets below — separate each set with a blank line. You can paste multiple sets for the same mon.</p>
+      <textarea id="pool" rows="12" placeholder="Garchomp @ Rocky Helmet
+Ability: Rough Skin
+EVs: 252 HP / 164 Def / 92 Spe
+Impish Nature
+- Stealth Rock
+- Earthquake
+- Dragon Tail
+- Fire Blast
+
+Dragapult @ Choice Specs
+Ability: Infiltrator
+EVs: 252 SpA / 4 SpD / 252 Spe
+Timid Nature
+- Draco Meteor
+- Shadow Ball
+- Fire Blast
+- U-turn"></textarea>
+    </div>
+
+    <div class="card">
+      <h2>🎯 Threatlist</h2>
+      <p class="hint">Paste threats the same way — separate each set with a blank line.</p>
+      <textarea id="threats" rows="12" placeholder="Kingambit @ Assault Vest
+Ability: Supreme Overlord
+EVs: 252 HP / 252 Atk / 4 SpD
+Adamant Nature
+- Kowtow Cleave
+- Iron Head
+- Sucker Punch
+- Low Kick"></textarea>
+    </div>
+
+    <button id="analyzeBtn" onclick="analyze()">⚔️ Analyze Matchups</button>
+
+    <div id="loading" class="hidden">
+      <div class="spinner"></div>
+      <p>Analyzing sets... this may take a moment</p>
+    </div>
+
+    <div id="results" class="hidden">
+      <h2>📊 Results</h2>
+      <div id="resultsTable"></div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
