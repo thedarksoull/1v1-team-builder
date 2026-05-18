@@ -49,7 +49,14 @@ async function analyze() {
       body: JSON.stringify({ pool, threats, apiKey })
     });
 
-    const data = await res.json();
+    const text = await res.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch(e) {
+      alert('Server error: ' + text.slice(0, 200));
+      return;
+    }
 
     if (data.error) {
       alert('Error: ' + data.error);
