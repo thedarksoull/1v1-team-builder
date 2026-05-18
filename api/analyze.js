@@ -12,29 +12,20 @@ export default async function handler(req, res) {
   const results = [];
 
   for (const entry of pool) {
-    const prompt = `
-You are a Pokemon 1v1 metagame expert. Analyze this Pokemon set against the given threatlist.
+    const prompt = `You are a Pokemon 1v1 metagame expert. Analyze this Pokemon set against the given threatlist.
 
 POKEMON SET:
 ${entry.set}
 
-THREATLIST (each threat may have multiple sets):
-${threats.map((t, i) => `Threat ${i + 1}:\n${t.sets.join('\n---\n')}`).join('\n\n')}
+THREATLIST:
+${threats.map((t, i) => `Threat ${i + 1} - ${t.name}:\n${t.sets.join('\n---\n')}`).join('\n\n')}
 
-For each threat, determine:
-1. Does this Pokemon set WIN, LOSE, or TIE against each of the threat's sets?
-2. If a threat has multiple sets, does this Pokemon win against MOST of them?
+For each threat, determine if this Pokemon set wins, loses, or ties.
 
-Reply ONLY in this exact JSON format, no extra text:
-{
-  "name": "<pokemon name and set label>",
-  "results": [
-    { "threat": "<threat name>", "outcome": "WIN" or "LOSE" or "TIE", "reason": "<one line explanation>" }
-  ],
-  "score": <number of threats beaten>,
-  "summary": "<one sentence overall summary>"
-}
-`;
+You MUST respond with ONLY a JSON object, no markdown, no backticks, no explanation before or after. Just raw JSON like this:
+{"name":"Garchomp","results":[{"threat":"Kingambit","outcome":"WIN","reason":"Earthquake OHKOs"}],"score":1,"summary":"Beats most physical threats"}
+
+Now respond with only JSON:`;
 
     try {
       const geminiRes = await fetch(
@@ -44,22 +35,48 @@ Reply ONLY in this exact JSON format, no extra text:
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: { temperature: 0.1 }
+            generationConfig: { 
+              temperature: 0.1,
+              responseMimeType: "application/json"
+            }
           })
         }
       );
 
       const geminiData = await geminiRes.json();
+      
+      if (geminiData.error) {
+        results.push({
+          name: entry.label || 'Unknown',
+          results: [],
+          score: 0,
+          summary: `API Error: ${geminiData.error.message}`
+        });
+        continue;
+      }
+
       const raw = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '';
       const clean = raw.replace(/```json|```/g, '').trim();
-      const parsed = JSON.parse(clean);
+      
+      let parsed;
+      try {
+        parsed = JSON.parse(clean);
+      } catch (parseErr) {
+        const jsonMatch = clean.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          parsed = JSON.parse(jsonMatch[0]);
+        } else {
+          throw new Error('Could not extract JSON from response');
+        }
+      }
+      
       results.push(parsed);
     } catch (err) {
       results.push({
         name: entry.label || 'Unknown',
         results: [],
         score: 0,
-        summary: 'Error analyzing this set.'
+        summary: `Error: ${err.message}`
       });
     }
   }
