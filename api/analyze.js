@@ -81,7 +81,8 @@ Respond with ONLY raw JSON, no markdown, no backticks, no extra text:
     }
 
     results.sort((a, b) => b.score - a.score);
-    return res.status(200).json({ results });
+    const top5 = results.slice(0, 5);
+    return res.status(200).json({ results: top5 });
 
   } catch (outerErr) {
     return res.status(500).json({ error: outerErr.message });
