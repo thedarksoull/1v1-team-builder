@@ -58,7 +58,7 @@ async function analyze() {
 
     renderResults(data.results, threats.length);
   } catch (err) {
-    alert('Something went wrong. Check your API key and try again.');
+    alert('Error: ' + err.message);
     console.error(err);
   } finally {
     document.getElementById('analyzeBtn').disabled = false;
