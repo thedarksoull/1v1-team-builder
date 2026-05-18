@@ -68,7 +68,8 @@ Respond with ONLY raw JSON, no markdown, no backticks, no extra text:
         }
 
         results.push(parsed);
-
+        await new Promise(r => setTimeout(r, 1500));
+        
       } catch (err) {
         results.push({
           name: entry.label || 'Unknown',
